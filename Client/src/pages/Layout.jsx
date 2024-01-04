@@ -6,6 +6,9 @@ export default function layout() {
         <div>
             <Link to ="/">Musicstore</Link>
         </div>
+        <div>
+          <Link to="/Admin">Admin</Link>
+        </div>
         <Outlet></Outlet>
     </>
   )

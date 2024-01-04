@@ -44,6 +44,78 @@ server.get("/Categories", async (req,res)=>{
     }
 })
 
+server.get("/Categories/:instrumento", async (req, res) => {
+    try {
+        const instrumento = req.params.instrumento; 
+        
+        const productsRef = db.collection("Categorias");
+        const querySnapshot = await productsRef.where("nombre", "==", instrumento).get();
+        
+        let categoryRef; 
+        
+        querySnapshot.forEach((doc) => {
+            categoryRef = doc.ref;
+        });
+        
+        if (!categoryRef) {
+            return res.status(404).send("Instrumento no encontrado");
+        }
+        
+        const inventoryRef = categoryRef.collection("Instrumentos");
+        const inventorySnapshot = await inventoryRef.get();
+        const inventoryArray = [];
+        
+        inventorySnapshot.forEach((doc) => {
+            inventoryArray.push(doc.data());
+        });
+
+        res.send(inventoryArray);
+    } catch (error) {
+        res.status(500).send("Error al obtener la información: " + error);
+    }
+});
+
+server.delete("/Admin/delete/:category/:product", async (req, res) => {
+    try {
+        const { category, product } = req.params;
+
+        const categoryRef = db.collection("Categorias");
+
+        const categoryQuerySnapshot = await categoryRef.where("nombre", "==", category).get();
+
+        let categoryDocRef;
+
+        categoryQuerySnapshot.forEach((doc) => {
+            categoryDocRef = doc.ref;
+        });
+
+        if (!categoryDocRef) {
+            throw new Error("Categoría no encontrada");
+        }
+
+        const productsRef = categoryDocRef.collection("Instrumentos");
+
+        const productQuerySnapshot = await productsRef.where('nombre', "==", product).get();
+
+        let productDocRef;
+
+        productQuerySnapshot.forEach((doc) => {
+            productDocRef = doc.ref;
+        });
+
+        if (!productDocRef) {
+            throw new Error("Producto no encontrado");
+        }
+
+        await productDocRef.delete();
+
+        res.send("Producto eliminado");
+    } catch (error) {
+        res.status(500).send(error.message);
+    }
+});
+
+
 const PORT = process.env.PORT || 3000;
 
 server.listen(PORT, () => {

@@ -28,6 +28,7 @@ export default function home() {
            <div>{categoria}</div>
           </Link>
         )}
+        
     </div>  
   )
 }
