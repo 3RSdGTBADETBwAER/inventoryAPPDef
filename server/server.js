@@ -115,6 +115,85 @@ server.delete("/Admin/delete/:category/:product", async (req, res) => {
     }
 });
 
+server.put("/AdminPut/:category/products", async (req, res) => {
+    const { category } = req.params;
+    const newProductsData = req.body;
+
+    const categoriasRef = db.collection("Categorias");
+
+    try {
+        const querySnapshot = await categoriasRef.where("nombre", "==", category).get();
+
+        if (querySnapshot.empty) {
+            console.log("No se encontró ningún documento con el nombre proporcionado");
+            res.status(404).send("No se encontró ningún documento con el nombre proporcionado");
+            return;
+        }
+
+        const documentoEncontrado = querySnapshot.docs[0];
+
+        const instrumentosRef = documentoEncontrado.ref.collection("Instrumentos");
+
+        const existingProductsSnapshot = await instrumentosRef.get();
+
+        existingProductsSnapshot.docs.forEach(async (existingDoc, index) => {
+            const newProduct = newProductsData[index];
+            
+            if (newProduct) {
+                await existingDoc.ref.set(newProduct);
+            }
+        });
+
+        res.status(200).send("Datos actualizados correctamente");
+    } catch (error) {
+        console.error("Error al actualizar los datos:", error);
+        res.status(500).send("Error al actualizar los datos");
+    }
+});
+
+server.post("/AdminPost/:categoria/products", async (req, res) => {
+    const { categoria } = req.params
+
+    const categoriasRef = db.collection("Categorias")
+
+    try {
+        const categoriasQuerySnapshot = await categoriasRef.where("nombre", "==", categoria).get()
+
+        // Verificar si se encontraron documentos
+        if (categoriasQuerySnapshot.empty) {
+            console.error(`No se encontró ningún documento en la colección 'Categorias' con el nombre ${categoria}`);
+            res.status(404).send("Documento no encontrado");
+            return;
+        }
+
+        const documentoEncontrado = categoriasQuerySnapshot.docs[0]
+
+        // Verificar si el documento tiene el método collection
+        if (!documentoEncontrado.ref.collection) {
+            console.error("El documento encontrado no tiene el método 'collection'");
+            res.status(500).send("Error interno del servidor");
+            return;
+        }
+
+        const instrumentosRef = documentoEncontrado.ref.collection("Instrumentos")
+        const instrumentosQuerySnapshot = await instrumentosRef.get()
+        const numeroDocumentos = instrumentosQuerySnapshot.size
+
+        const nuevoDocumentoRef = instrumentosRef.doc(`InstrumentosID_${numeroDocumentos + 1}`)
+
+        await nuevoDocumentoRef.set({
+            nombre: req.body.nombre,
+            precio: req.body.precio,
+            cantidad: req.body.cantidad
+        })
+
+        res.status(201).send("documentoCreado");
+    } catch (error) {
+        console.error("Error:", error);
+        res.status(500).send("Error interno del servidor");
+    }
+})
+
 
 const PORT = process.env.PORT || 3000;
 
